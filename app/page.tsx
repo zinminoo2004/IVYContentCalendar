@@ -9,6 +9,16 @@ import { MonthlyCalendar } from '@/components/calendar/monthly-calendar'
 import { YearlyCalendar } from '@/components/calendar/yearly-calendar'
 import { CalendarLegend } from '@/components/calendar/calendar-legend'
 import { EventModal } from '@/components/calendar/event-modal'
+import { NoteModal } from '@/components/calendar/note-modal'
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -19,7 +29,7 @@ async function fetchContentTypes(): Promise<ContentType[]> {
     .from('content_types')
     .select('*')
     .order('created_at', { ascending: true })
-  
+
   if (error) throw error
   return data || []
 }
@@ -27,14 +37,14 @@ async function fetchContentTypes(): Promise<ContentType[]> {
 async function fetchEvents(year: number): Promise<CalendarEvent[]> {
   const startDate = `${year}-01-01`
   const endDate = `${year}-12-31`
-  
+
   const { data, error } = await supabase
     .from('calendar_events')
     .select('*')
     .gte('event_date', startDate)
     .lte('event_date', endDate)
     .order('event_date', { ascending: true })
-  
+
   if (error) throw error
   return data || []
 }
@@ -47,6 +57,10 @@ export default function ContentCalendarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false)
+  const [selectedNote, setSelectedNote] = useState<ContentType | null>(null)
+  const [noteToDelete, setNoteToDelete] = useState<ContentType | null>(null)
+  const [isDeletingNote, setIsDeletingNote] = useState(false)
 
   const { data: contentTypes = [], error: contentTypesError } = useSWR(
     'content_types',
@@ -132,7 +146,7 @@ export default function ContentCalendarPage() {
           updated_at: new Date().toISOString()
         })
         .eq('id', data.id)
-      
+
       if (error) throw error
     } else {
       // Create new event
@@ -145,10 +159,10 @@ export default function ContentCalendarPage() {
           content_type_id: data.content_type_id,
           is_completed: data.is_completed
         })
-      
+
       if (error) throw error
     }
-    
+
     // Refresh events
     mutate(['events', currentYear])
   }
@@ -158,9 +172,9 @@ export default function ContentCalendarPage() {
       .from('calendar_events')
       .delete()
       .eq('id', id)
-    
+
     if (error) throw error
-    
+
     // Refresh events
     mutate(['events', currentYear])
   }
@@ -169,6 +183,58 @@ export default function ContentCalendarPage() {
     setSelectedEvent(null)
     setSelectedDate(new Date())
     setIsModalOpen(true)
+  }
+
+  const handleAddNote = useCallback(() => {
+    setSelectedNote(null)
+    setIsNoteModalOpen(true)
+  }, [])
+
+  const handleEditNote = useCallback((note: ContentType) => {
+    setSelectedNote(note)
+    setIsNoteModalOpen(true)
+  }, [])
+
+  const handleSaveNote = async (data: {
+    id?: string
+    name: string
+    color: string
+  }) => {
+    if (data.id) {
+      const { error } = await supabase
+        .from('content_types')
+        .update({ name: data.name, color: data.color })
+        .eq('id', data.id)
+      if (error) throw error
+    } else {
+      const { error } = await supabase
+        .from('content_types')
+        .insert({ name: data.name, color: data.color })
+      if (error) throw error
+    }
+    mutate('content_types')
+    setIsNoteModalOpen(false)
+    setSelectedNote(null)
+  }
+
+  const handleDeleteNote = useCallback((id: string) => {
+    setNoteToDelete(contentTypes.find((ct) => ct.id === id) ?? null)
+  }, [contentTypes])
+
+  const handleConfirmDeleteNote = async () => {
+    if (!noteToDelete) return
+    setIsDeletingNote(true)
+    try {
+      const { error } = await supabase
+        .from('content_types')
+        .delete()
+        .eq('id', noteToDelete.id)
+      if (error) throw error
+      mutate('content_types')
+      setNoteToDelete(null)
+    } finally {
+      setIsDeletingNote(false)
+    }
   }
 
   if (contentTypesError || eventsError) {
@@ -224,7 +290,56 @@ export default function ContentCalendarPage() {
           )}
         </div>
 
-        <CalendarLegend contentTypes={contentTypes} />
+        <CalendarLegend
+          contentTypes={contentTypes}
+          onAddNote={handleAddNote}
+          onEditNote={handleEditNote}
+          onDeleteNote={handleDeleteNote}
+        />
+
+        <NoteModal
+          isOpen={isNoteModalOpen}
+          onClose={() => {
+            setIsNoteModalOpen(false)
+            setSelectedNote(null)
+          }}
+          note={selectedNote}
+          onSave={handleSaveNote}
+          onDelete={async (id) => {
+            const { error } = await supabase
+              .from('content_types')
+              .delete()
+              .eq('id', id)
+            if (error) throw error
+            mutate('content_types')
+            setIsNoteModalOpen(false)
+            setSelectedNote(null)
+          }}
+        />
+
+        <AlertDialog open={!!noteToDelete} onOpenChange={(open) => !open && setNoteToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete note?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove &quot;{noteToDelete?.name}&quot; from the legend. Events
+                using this type will keep their date but will no longer show a type.
+                This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => void handleConfirmDeleteNote()}
+                disabled={isDeletingNote}
+              >
+                {isDeletingNote ? 'Deleting...' : 'Delete'}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <EventModal
           isOpen={isModalOpen}
