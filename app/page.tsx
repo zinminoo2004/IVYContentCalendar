@@ -10,6 +10,7 @@ import { YearlyCalendar } from '@/components/calendar/yearly-calendar'
 import { CalendarLegend } from '@/components/calendar/calendar-legend'
 import { EventModal } from '@/components/calendar/event-modal'
 import { NoteModal } from '@/components/calendar/note-modal'
+import { DayEventsSheet } from '@/components/calendar/day-events-sheet'
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -61,6 +62,7 @@ export default function ContentCalendarPage() {
   const [selectedNote, setSelectedNote] = useState<ContentType | null>(null)
   const [noteToDelete, setNoteToDelete] = useState<ContentType | null>(null)
   const [isDeletingNote, setIsDeletingNote] = useState(false)
+  const [dayEventsSheetDate, setDayEventsSheetDate] = useState<Date | null>(null)
 
   const { data: contentTypes = [], error: contentTypesError } = useSWR(
     'content_types',
@@ -185,6 +187,10 @@ export default function ContentCalendarPage() {
     setIsModalOpen(true)
   }
 
+  const handleShowMoreClick = useCallback((date: Date) => {
+    setDayEventsSheetDate(date)
+  }, [])
+
   const handleAddNote = useCallback(() => {
     setSelectedNote(null)
     setIsNoteModalOpen(true)
@@ -277,6 +283,7 @@ export default function ContentCalendarPage() {
               contentTypes={contentTypes}
               onDateClick={handleDateClick}
               onEventClick={handleEventClick}
+              onShowMoreClick={handleShowMoreClick}
             />
           ) : (
             <div className="p-6">
@@ -340,6 +347,24 @@ export default function ContentCalendarPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <DayEventsSheet
+          isOpen={!!dayEventsSheetDate}
+          onClose={() => setDayEventsSheetDate(null)}
+          date={dayEventsSheetDate}
+          events={events}
+          contentTypes={contentTypes}
+          onEventClick={(event) => {
+            setSelectedEvent(event)
+            setSelectedDate(null)
+            setIsModalOpen(true)
+          }}
+          onAddEvent={() => {
+            setSelectedEvent(null)
+            setSelectedDate(dayEventsSheetDate || new Date())
+            setIsModalOpen(true)
+          }}
+        />
 
         <EventModal
           isOpen={isModalOpen}

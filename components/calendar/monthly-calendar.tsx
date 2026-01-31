@@ -12,6 +12,7 @@ interface MonthlyCalendarProps {
   contentTypes: ContentType[]
   onDateClick: (date: Date) => void
   onEventClick: (event: CalendarEvent) => void
+  onShowMoreClick?: (date: Date) => void
 }
 
 const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
@@ -22,7 +23,8 @@ export function MonthlyCalendar({
   events,
   contentTypes,
   onDateClick,
-  onEventClick
+  onEventClick,
+  onShowMoreClick,
 }: MonthlyCalendarProps) {
   const days = getCalendarDays(year, month)
 
@@ -104,9 +106,18 @@ export function MonthlyCalendar({
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-xs text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onShowMoreClick
+                        ? onShowMoreClick(day.date)
+                        : onDateClick(day.date)
+                    }}
+                    className="w-full min-h-[44px] py-2 -mx-1 mt-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded cursor-pointer touch-manipulation transition-colors text-left"
+                  >
                     +{dayEvents.length - 3} more
-                  </div>
+                  </button>
                 )}
               </div>
             </div>
