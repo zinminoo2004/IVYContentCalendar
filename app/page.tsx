@@ -36,6 +36,7 @@ async function fetchContentTypes(): Promise<ContentType[]> {
 }
 
 async function fetchEvents(year: number): Promise<CalendarEvent[]> {
+  if (!supabase) throw new Error('Supabase client not configured. Check .env.local.')
   const startDate = `${year}-01-01`
   const endDate = `${year}-12-31`
 
@@ -64,15 +65,22 @@ export default function ContentCalendarPage() {
   const [isDeletingNote, setIsDeletingNote] = useState(false)
   const [dayEventsSheetDate, setDayEventsSheetDate] = useState<Date | null>(null)
 
-  const { data: contentTypes = [], error: contentTypesError } = useSWR(
+  const { data: contentTypes = [], error: contentTypesError, mutate: mutateContentTypes } = useSWR(
     'content_types',
     fetchContentTypes
   )
 
-  const { data: events = [], error: eventsError } = useSWR(
+  const { data: events = [], error: eventsError, mutate: mutateEvents } = useSWR(
     ['events', currentYear],
     () => fetchEvents(currentYear)
   )
+
+  const hasError = contentTypesError || eventsError
+  const errorMessage = contentTypesError?.message || eventsError?.message || 'Unknown error'
+  const handleRetry = useCallback(() => {
+    void mutateContentTypes()
+    void mutateEvents()
+  }, [mutateContentTypes, mutateEvents])
 
   const handlePrevious = useCallback(() => {
     if (viewMode === 'monthly') {
@@ -243,16 +251,26 @@ export default function ContentCalendarPage() {
     }
   }
 
-  if (contentTypesError || eventsError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-destructive">Error loading calendar data. Please try again.</p>
-      </div>
-    )
-  }
-
   return (
     <main className="min-h-screen bg-background">
+      {hasError && (
+        <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="text-sm">
+            <p className="font-medium text-destructive">Error loading calendar data</p>
+            <p className="text-muted-foreground mt-0.5">
+              Check that <code className="text-xs bg-muted px-1 rounded">.env.local</code> has{' '}
+              <code className="text-xs bg-muted px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+              <code className="text-xs bg-muted px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> from your Supabase project.
+            </p>
+            {process.env.NODE_ENV === 'development' && (
+              <p className="text-xs text-muted-foreground mt-1 font-mono truncate">{errorMessage}</p>
+            )}
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRetry} className="shrink-0">
+            Retry
+          </Button>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <CalendarHeader
