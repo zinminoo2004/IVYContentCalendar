@@ -52,40 +52,16 @@ export interface CalendarDay {
   isToday: boolean
 }
 
+/** Returns only the days of the given month (1..28|29|30|31). No empty slots, no other months. */
 export function getCalendarDays(year: number, month: number): CalendarDay[] {
   const days: CalendarDay[] = []
-  const firstDay = getFirstDayOfMonth(year, month)
   const daysInMonth = getDaysInMonth(year, month)
-  const daysInPrevMonth = getDaysInMonth(year, month - 1)
 
-  // Previous month's days
-  for (let i = firstDay - 1; i >= 0; i--) {
-    const day = daysInPrevMonth - i
-    const date = new Date(year, month - 1, day)
-    days.push({
-      date,
-      isCurrentMonth: false,
-      isToday: isToday(date)
-    })
-  }
-
-  // Current month's days
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day)
     days.push({
       date,
       isCurrentMonth: true,
-      isToday: isToday(date)
-    })
-  }
-
-  // Next month's days to fill the grid
-  const remainingDays = 42 - days.length // 6 rows * 7 days
-  for (let day = 1; day <= remainingDays; day++) {
-    const date = new Date(year, month + 1, day)
-    days.push({
-      date,
-      isCurrentMonth: false,
       isToday: isToday(date)
     })
   }

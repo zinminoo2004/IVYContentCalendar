@@ -41,42 +41,31 @@ export function MonthlyCalendar({
 
   return (
     <div className="w-full">
-      {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-border">
-        {DAYS.map(day => (
-          <div
-            key={day}
-            className="py-3 text-center text-sm font-medium text-muted-foreground"
-          >
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7">
+      {/* Calendar: 1 col on mobile, 7 cols on desktop. Only this month's days (1 to end), no empty cells. */}
+      <div className="grid grid-cols-1 md:grid-cols-7">
         {days.map((day, index) => {
           const dayEvents = getEventsForDate(day.date)
+          const weekDay = DAYS[day.date.getDay()]
           return (
             <div
               key={index}
               onClick={() => onDateClick(day.date)}
               className={cn(
-                'min-h-[120px] border-b border-r border-border p-2 cursor-pointer transition-colors hover:bg-muted/50',
-                !day.isCurrentMonth && 'bg-muted/30',
-                index % 7 === 0 && 'border-l'
+                'min-h-[100px] md:min-h-[160px] border-b border-border p-3 md:p-3 cursor-pointer transition-colors hover:bg-muted/50',
+                'md:border-r',
+                index % 7 === 0 && 'md:border-l'
               )}
             >
+              {/* Date with weekday: e.g. "SUN 01" */}
               <div
                 className={cn(
-                  'text-sm font-medium mb-1',
-                  !day.isCurrentMonth && 'text-muted-foreground',
+                  'text-sm font-medium mb-2 md:mb-1',
                   day.isToday && 'text-primary font-bold'
                 )}
               >
-                {day.date.getDate().toString().padStart(2, '0')}
+                {weekDay} {day.date.getDate().toString().padStart(2, '0')}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2 md:space-y-2">
                 {dayEvents.slice(0, 3).map(event => (
                   <div
                     key={event.id}
@@ -85,23 +74,23 @@ export function MonthlyCalendar({
                       onEventClick(event)
                     }}
                     className={cn(
-                      "flex items-center gap-1.5 text-xs cursor-pointer hover:opacity-70 transition-opacity",
-                      event.is_completed && "opacity-60"
+                      'flex items-start gap-2 md:gap-2 text-sm cursor-pointer hover:opacity-70 transition-opacity min-h-[44px] md:min-h-0',
+                      event.is_completed && 'opacity-60'
                     )}
                   >
                     {event.is_completed ? (
-                      <div className="w-4 h-4 rounded-full shrink-0 bg-green-500 flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white" />
+                      <div className="w-5 h-5 md:w-3.5 md:h-3.5 rounded-full shrink-0 bg-green-500 flex items-center justify-center mt-0.5">
+                        <Check className="w-3 h-3 md:w-2.5 md:h-2.5 text-white" />
                       </div>
                     ) : (
                       <div
-                        className="w-2 h-2 rounded-full shrink-0"
+                        className="w-3 h-3 md:w-2.5 md:h-2.5 rounded-full shrink-0 mt-1 md:mt-1.5"
                         style={{ backgroundColor: getContentTypeColor(event.content_type_id) }}
                       />
                     )}
                     <span className={cn(
-                      "truncate text-foreground",
-                      event.is_completed && "line-through"
+                      'flex-1 min-w-0 break-words text-foreground leading-snug',
+                      event.is_completed && 'line-through'
                     )}>{event.title}</span>
                   </div>
                 ))}
@@ -114,7 +103,7 @@ export function MonthlyCalendar({
                         ? onShowMoreClick(day.date)
                         : onDateClick(day.date)
                     }}
-                    className="w-full min-h-[44px] py-2 -mx-1 mt-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded cursor-pointer touch-manipulation transition-colors text-left"
+                    className="w-full min-h-[48px] md:min-h-[44px] py-2.5 md:py-2 -mx-1 mt-1 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded cursor-pointer touch-manipulation transition-colors text-left"
                   >
                     +{dayEvents.length - 3} more
                   </button>

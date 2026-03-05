@@ -45,7 +45,7 @@ export function YearlyCalendar({
             <h3 className="text-lg font-semibold mb-3 text-foreground">
               {getShortMonthName(month)}
             </h3>
-            
+
             {/* Day headers */}
             <div className="grid grid-cols-7 mb-1">
               {DAYS.map((day, i) => (
@@ -60,10 +60,10 @@ export function YearlyCalendar({
 
             {/* Calendar mini grid */}
             <div className="grid grid-cols-7 gap-y-0.5">
-              {days.slice(0, 42).map((day, index) => {
+              {days.map((day, index) => {
                 const dayEvents = getEventsForDate(day.date)
                 const hasEvents = dayEvents.length > 0
-                const firstEventColor = hasEvents 
+                const firstEventColor = hasEvents
                   ? getContentTypeColor(dayEvents[0].content_type_id)
                   : undefined
 
