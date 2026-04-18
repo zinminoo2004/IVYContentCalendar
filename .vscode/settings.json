@@ -1,0 +1,7 @@
+{
+  "files.watcherExclude": {
+    "**/.pnpm-store/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true
+  }
+}

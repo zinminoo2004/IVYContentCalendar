@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import useSWR, { mutate } from 'swr'
-import { createClient } from '@/lib/supabase/client'
+import { assertSupabaseBrowserEnv, createClient } from '@/lib/supabase/client'
 import { CalendarEvent, ContentType, ViewMode } from '@/lib/types'
 import { CalendarHeader } from '@/components/calendar/calendar-header'
 import { MonthlyCalendar } from '@/components/calendar/monthly-calendar'
@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button'
 const supabase = createClient()
 
 async function fetchContentTypes(): Promise<ContentType[]> {
+  assertSupabaseBrowserEnv()
   const { data, error } = await supabase
     .from('content_types')
     .select('*')
@@ -36,6 +37,7 @@ async function fetchContentTypes(): Promise<ContentType[]> {
 }
 
 async function fetchEvents(year: number): Promise<CalendarEvent[]> {
+  assertSupabaseBrowserEnv()
   if (!supabase) throw new Error('Supabase client not configured. Check .env.local.')
   const startDate = `${year}-01-01`
   const endDate = `${year}-12-31`
@@ -260,7 +262,9 @@ export default function ContentCalendarPage() {
             <p className="text-muted-foreground mt-0.5">
               Check that <code className="text-xs bg-muted px-1 rounded">.env.local</code> has{' '}
               <code className="text-xs bg-muted px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
-              <code className="text-xs bg-muted px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> from your Supabase project.
+              <code className="text-xs bg-muted px-1 rounded">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> (Connect
+              modal) or <code className="text-xs bg-muted px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> (legacy)
+              from your Supabase project.
             </p>
             {process.env.NODE_ENV === 'development' && (
               <p className="text-xs text-muted-foreground mt-1 font-mono truncate">{errorMessage}</p>

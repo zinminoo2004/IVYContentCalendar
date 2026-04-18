@@ -3,6 +3,9 @@
 # dependencies
 /node_modules
 
+# pnpm store when configured inside the repo (thousands of files; never commit)
+.pnpm-store/
+
 # next.js
 /.next/
 /out/
